@@ -1,6 +1,5 @@
 import subprocess
 import os
-from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 from tqdm import tqdm
 
 def create_setup(WASD_dir):
@@ -16,9 +15,9 @@ def download_csv(WASD_dir):
     file_link = "1calMd83IIzYnvETY3bee7juRACMBuuyR"
     fullpath_csv = os.path.join(WASD_dir, "WASD_csv.zip")
 
-    cmd = "gdown --id %s -O %s"%(file_link, fullpath_csv)
+    cmd = f"gdown --id {file_link} -O {fullpath_csv}"
     subprocess.call(cmd, shell=True, stdout=None)
-    cmd = "unzip %s -d %s"%(fullpath_csv, WASD_dir)
+    cmd = f"unzip {fullpath_csv} -d {WASD_dir}"
     subprocess.call(cmd, shell=True, stdout=None)
     os.remove(fullpath_csv)
 
@@ -28,9 +27,9 @@ def download_videos(WASD_dir):
     file_link = "1F6pYUNz1u23Q-PvPHpxzm4RUhgFCfVYL"
     fullpath_csv = os.path.join(WASD_dir, "WASD_videos.zip")
 
-    cmd = "gdown --id %s -O %s"%(file_link, fullpath_csv)
+    cmd = f"gdown --id {file_link} -O {fullpath_csv}"
     subprocess.call(cmd, shell=True, stdout=None)
-    cmd = "unzip %s -d %s"%(fullpath_csv, WASD_dir)
+    cmd = f"unzip {fullpath_csv} -d {WASD_dir}/WASD_videos"
     subprocess.call(cmd, shell=True, stdout=None)
     os.remove(fullpath_csv)
 
@@ -58,6 +57,34 @@ def get_start_end_time(time_line):
     return start_time, end_time
 
 
+def ffmpeg_extract_subclip(
+    inputfile, start_time, end_time, outputfile=None, logger="bar"
+):
+    """Makes a new video file playing video file between two times.
+
+    Parameters
+    ----------
+
+    inputfile : str
+      Path to the file from which the subclip will be extracted.
+
+    start_time : float
+      Moment of the input clip that marks the start of the produced subclip.
+
+    end_time : float
+      Moment of the input clip that marks the end of the produced subclip.
+
+    outputfile : str, optional
+      Path to the output file. Defaults to
+      ``<inputfile_name>SUB<start_time>_<end_time><ext>``.
+    """
+    if not outputfile:
+        name, ext = os.path.splitext(inputfile)
+        t1, t2 = [int(1000 * t) for t in [start_time, end_time]]
+        outputfile = "%sSUB%d_%d%s" % (name, t1, t2, ext)
+
+    cmd = f"ffmpeg -y -hide_banner -loglevel warning -i {inputfile} -ss {start_time:0.2f} -t {end_time-start_time:0.2f} -map 0 -vcodec copy -acodec copy -copyts {outputfile}"
+    return subprocess.call(cmd.split(" "))
 
 def get_list_video_url(file_name):
     with open(file_name, 'r') as video_file:
@@ -97,10 +124,9 @@ def get_subvids(vids_dir, output_dir):
 
             start_time, end_time = get_start_end_time(timer)
 
-            vid_name = "{}_{}-{}.mp4".format(vid_url, start_time, end_time)
+            vid_name = f"{vid_url}_{start_time}-{end_time}.mp4"
             vid_name_fullpath = os.path.join(output_dir, vid_name)
-
-            ffmpeg_extract_subclip(full_video_name, start_time, end_time, targetname=vid_name_fullpath)
+            ffmpeg_extract_subclip(full_video_name, start_time, end_time, outputfile=vid_name_fullpath)
 
 # --------------------------------------------------------------------
 
@@ -112,7 +138,7 @@ if __name__ == '__main__':
     vids_dir_fullpath = os.path.join(WASD_dir, vids_dir)
     orig_vids_fullpath = os.path.join(WASD_dir, orig_vids)
 
-    create_setup(WASD_dir)
-    download_csv(WASD_dir)
-    download_videos(WASD_dir)
+    # create_setup(WASD_dir)
+    # download_csv(WASD_dir)
+    # download_videos(WASD_dir)
     get_subvids(vids_dir_fullpath, orig_vids_fullpath)

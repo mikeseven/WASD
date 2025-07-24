@@ -1,0 +1,15 @@
+[project]
+name = "wasd"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "gdown>=5.2.0",
+    "moviepy>=2.2.1",
+    "numpy>=2.3.1",
+    "opencv-python-headless>=4.11.0.86",
+    "pandas>=2.3.1",
+    "scipy>=1.16.0",
+    "tqdm>=4.67.1",
+]

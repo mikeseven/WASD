@@ -12,10 +12,11 @@ def create_setup(WASD_dir):
 
 def download_csv(WASD_dir):
     print("...Downloading WASD csv...")
-    file_link = "1calMd83IIzYnvETY3bee7juRACMBuuyR"
+    # file_link = "1calMd83IIzYnvETY3bee7juRACMBuuyR"
     fullpath_csv = os.path.join(WASD_dir, "WASD_csv.zip")
 
-    cmd = f"gdown --id {file_link} -O {fullpath_csv}"
+    # cmd = f"gdown --id {file_link} -O {fullpath_csv}"
+    cmd = f"gdown -O {fullpath_csv}"
     subprocess.call(cmd, shell=True, stdout=None)
     cmd = f"unzip {fullpath_csv} -d {WASD_dir}"
     subprocess.call(cmd, shell=True, stdout=None)
@@ -24,10 +25,11 @@ def download_csv(WASD_dir):
 
 def download_videos(WASD_dir):
     print("...Downloading WASD videos...")
-    file_link = "1F6pYUNz1u23Q-PvPHpxzm4RUhgFCfVYL"
+    # file_link = "1F6pYUNz1u23Q-PvPHpxzm4RUhgFCfVYL"
     fullpath_csv = os.path.join(WASD_dir, "WASD_videos.zip")
 
-    cmd = f"gdown --id {file_link} -O {fullpath_csv}"
+    # cmd = f"gdown --id {file_link} -O {fullpath_csv}"
+    cmd = f"gdown -O {fullpath_csv}"
     subprocess.call(cmd, shell=True, stdout=None)
     cmd = f"unzip {fullpath_csv} -d {WASD_dir}/WASD_videos"
     subprocess.call(cmd, shell=True, stdout=None)
@@ -81,7 +83,7 @@ def ffmpeg_extract_subclip(
     if not outputfile:
         name, ext = os.path.splitext(inputfile)
         t1, t2 = [int(1000 * t) for t in [start_time, end_time]]
-        outputfile = "%sSUB%d_%d%s" % (name, t1, t2, ext)
+        outputfile = f"{name}SUB{t1}_{t2}{ext}"
 
     cmd = f"ffmpeg -y -hide_banner -loglevel warning -i {inputfile} -ss {start_time:0.2f} -t {end_time-start_time:0.2f} -map 0 -vcodec copy -acodec copy -copyts {outputfile}"
     return subprocess.call(cmd.split(" "))
@@ -112,8 +114,8 @@ def get_subvids(vids_dir, output_dir):
     vids = get_vidnames(vids_dir)
 
     for vid_url in tqdm(vids):
-        video_name = "{}.mp4".format(vid_url)
-        file_txt   = "{}.txt".format(vid_url)
+        video_name = f"{vid_url}.mp4"
+        file_txt   = f"{vid_url}.txt"
 
         file_fullpath   = os.path.join(vids_dir, file_txt)
         full_video_name = os.path.join(vids_dir, video_name)

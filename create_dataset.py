@@ -1,4 +1,10 @@
-import os, subprocess, glob, pandas, tqdm, cv2, numpy
+import os
+import subprocess
+import glob
+import pandas
+import tqdm
+import cv2
+import numpy
 from scipy.io import wavfile 
 import sys
 import argparse
@@ -7,14 +13,15 @@ def extract_audio(orig_vid_dir, orig_audio_dir):
     # Take 1 hour to extract the audio from movies
     # for dataType in ['trainval', 'test']:
     for dataType in ['trainval']:
-        inpFolder = '%s/%s'%(orig_vid_dir, dataType)
-        outFolder = '%s/%s'%(orig_audio_dir, dataType)
+        inpFolder = f"{orig_vid_dir}/{dataType}"
+        outFolder = f"{orig_audio_dir}/{dataType}"
         os.makedirs(outFolder, exist_ok = True)
-        videos = glob.glob("%s/*"%(inpFolder))
-        for videoPath in tqdm.tqdm(videos):
-            audioPath = '%s/%s'%(outFolder, videoPath.split('/')[-1].split('.')[0] + '.wav')
-            cmd = ("ffmpeg -y -i %s -async 1 -ac 1 -vn -acodec pcm_s16le -ar 16000 -threads 8 %s -loglevel panic" % (videoPath, audioPath))
-            subprocess.call(cmd, shell=True, stdout=None)
+        videos = glob.glob(f"{inpFolder}/*")
+        for idx,videoPath in tqdm.tqdm(videos):
+            audioPath = f"{outFolder}/{videoPath.split('/')[-1].split('.')[0]}.wav"
+            cmd = f"ffmpeg -y -loglevel panic -i {videoPath} -async 1 -ac 1 -vn -acodec pcm_s16le -ar 16000 -threads 8 {audioPath}"
+            subprocess.call(cmd.split(" "), shell=True, stdout=None)
+                
 
 
 def extract_audio_clips(dataset_sets, csv_dir, clip_audio_dir, orig_audio_dir):
@@ -22,7 +29,7 @@ def extract_audio_clips(dataset_sets, csv_dir, clip_audio_dir, orig_audio_dir):
     dic = {'train':'trainval', 'val':'trainval', 'test':'test'}
 
     for dataType in dataset_sets:
-        df = pandas.read_csv(os.path.join(csv_dir, '%s_orig.csv'%(dataType)), engine='python')
+        df = pandas.read_csv(os.path.join(csv_dir, f'{dataType}_orig.csv'), engine='python')
         dfNeg = pandas.concat([df[df['label_id'] == 0], df[df['label_id'] == 2]])
         dfPos = df[df['label_id'] == 1]
         insNeg = dfNeg['instance_id'].unique().tolist()
@@ -38,6 +45,7 @@ def extract_audio_clips(dataset_sets, csv_dir, clip_audio_dir, orig_audio_dir):
             d = os.path.join(outDir, l[0])
             if not os.path.isdir(d):
                 os.makedirs(d)
+                
         for entity in tqdm.tqdm(entityList, total = len(entityList)):
             insData = df.get_group(entity)
             videoKey = insData.iloc[0]['video_id']
@@ -60,19 +68,16 @@ def extract_audio_clips(dataset_sets, csv_dir, clip_audio_dir, orig_audio_dir):
 def extract_video_clips(dataset_sets, csv_dir, clip_vid_dir, orig_vid_dir, extract_body_data=False):
 
     dic = {'train':'trainval', 'val':'trainval', 'test':'test'}
-    if extract_body_data:
-        visual_part  = ['face', 'body']
-    else:
-        visual_part  = ['face']
+    visual_part  = ['face', 'body'] if extract_body_data else ['face']
     
     for part in visual_part:
         for dataType in dataset_sets:
-            print("Extracting {} data of {} set...".format(part, dataType))
+            print(f"Extracting {part} data of {dataType} set...")
             if part == 'face':
-                csv_file = "{}_orig.csv".format(dataType)
+                csv_file = f"{dataType}_orig.csv"
             else:
-                csv_file = "{}_orig_body.csv".format(dataType)
-                clip_vid_dir = "{}_body".format(clip_vid_dir)
+                csv_file = f"{dataType}_orig_body.csv"
+                clip_vid_dir = f"{clip_vid_dir}_body"
 
             df = pandas.read_csv(os.path.join(csv_dir, csv_file))
                     
@@ -95,28 +100,29 @@ def extract_video_clips(dataset_sets, csv_dir, clip_vid_dir, orig_vid_dir, extra
                 videoKey = insData.iloc[0]['video_id']
                 entityID = insData.iloc[0]['entity_id']
                 videoDir = os.path.join(orig_vid_dir, dic[dataType])
-                videoFile = glob.glob(os.path.join(videoDir, '{}.*'.format(videoKey)))[0]
+                videoFile = glob.glob(os.path.join(videoDir, f'{videoKey}.*'))[0]
                 V = cv2.VideoCapture(videoFile)
                 insDir = os.path.join(os.path.join(outDir, videoKey, entityID))
                 if not os.path.isdir(insDir):
                     os.makedirs(insDir)
                 j = 0
                 for _, row in insData.iterrows():
-                    imageFilename = os.path.join(insDir, str("%.2f"%row['frame_timestamp'])+'.jpg')
+                    imageFilename = os.path.join(insDir, f"{row['frame_timestamp']:.2f}.jpg")
                     if os.path.exists(imageFilename):
                         # print('skip', image_filename)
                         continue
                     V.set(cv2.CAP_PROP_POS_MSEC, row['frame_timestamp'] * 1e3)
                     _, frame = V.read()
-                    h = numpy.size(frame, 0)
-                    w = numpy.size(frame, 1)
-                    x1 = int(row['entity_box_x1'] * w)
-                    y1 = int(row['entity_box_y1'] * h)
-                    x2 = int(row['entity_box_x2'] * w)
-                    y2 = int(row['entity_box_y2'] * h)
-                    face = frame[y1:y2, x1:x2, :]
-                    j = j+1
-                    cv2.imwrite(imageFilename, face)
+                    if frame is not None:
+                        h = numpy.size(frame, 0)
+                        w = numpy.size(frame, 1)
+                        x1 = int(row['entity_box_x1'] * w)
+                        y1 = int(row['entity_box_y1'] * h)
+                        x2 = int(row['entity_box_x2'] * w)
+                        y2 = int(row['entity_box_y2'] * h)
+                        face = frame[y1:y2, x1:x2, :]
+                        j = j+1
+                        cv2.imwrite(imageFilename, face)
 
 
 if __name__ == '__main__':

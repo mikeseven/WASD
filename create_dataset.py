@@ -17,10 +17,10 @@ def extract_audio(orig_vid_dir, orig_audio_dir):
         outFolder = f"{orig_audio_dir}/{dataType}"
         os.makedirs(outFolder, exist_ok = True)
         videos = glob.glob(f"{inpFolder}/*")
-        for idx,videoPath in tqdm.tqdm(videos):
+        for videoPath in tqdm.tqdm(videos):
             audioPath = f"{outFolder}/{videoPath.split('/')[-1].split('.')[0]}.wav"
-            cmd = f"ffmpeg -y -loglevel panic -i {videoPath} -async 1 -ac 1 -vn -acodec pcm_s16le -ar 16000 -threads 8 {audioPath}"
-            subprocess.call(cmd.split(" "), shell=True, stdout=None)
+            cmd = f"ffmpeg -y -hide_banner -loglevel panic -i {videoPath} -async 1 -ac 1 -vn -acodec pcm_s16le -ar 16000 -threads 8 {audioPath}"
+            subprocess.call(cmd.split(" "))
                 
 
 
